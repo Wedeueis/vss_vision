@@ -1,0 +1,2 @@
+/home/wedeueis/Documentos/NoBox/vssVision/build/exes/bDetect/CMakeFiles/main.exe.dir
+/home/wedeueis/Documentos/NoBox/vssVision/build/exes/bDetect/CMakeFiles/bDetect.dir
