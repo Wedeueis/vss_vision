@@ -1,5 +1,0 @@
-cmake_minimum_required (VERSION 2.6)
-project (VSS_VISION)
-find_package( OpenCV REQUIRED )
-add_executable(VSS_VISION ballDetection_HSV.cxx)
-target_link_libraries( VSS_VISION ${OpenCV_LIBS})
