@@ -5,7 +5,8 @@
 char state = 'd';
 cv::Scalar mean_color(0,0,0);
 double x_color = 0, y_color = 0;
-int colorH = 10, colorS = 229, colorV = 255, rangeH = 10, rangeS = 30, rangeV = 81;
+int colorH = 10, colorS = 229, colorV = 255;
+int supLimitH = 10, supLimitS = 30, supLimitV = 81, infLimitH = 10, infLimitS = 30, infLimitV = 81;
 double resize = 0.5;
 int selectedCorner = 0;
 cv::Mat Gframe;
@@ -26,9 +27,12 @@ void createTrackBars(){
 	//cvCreateTrackbar("HUE", "TrackBar", &colorH, 255, on_trackbar);
 	//cvCreateTrackbar("SATURATION", "TrackBar", &colorS, 255, on_trackbar);
 	//cvCreateTrackbar("VALUE", "TrackBar", &colorV, 255, on_trackbar);
-	cvCreateTrackbar("RANGE_H", "Control", &rangeH, 128, on_trackbar);
-	cvCreateTrackbar("RANGE_S", "Control", &rangeS, 128, on_trackbar);
-	cvCreateTrackbar("RANGE_V", "Control", &rangeV, 128, on_trackbar);
+	cvCreateTrackbar("INFERIOR_LIMIT_H", "Control", &infLimitH, 128, on_trackbar);
+	cvCreateTrackbar("SUPERIOR_LIMIT_H", "Control", &supLimitH, 128, on_trackbar);	
+	cvCreateTrackbar("INFERIOR_LIMIT_S", "Control", &infLimitS, 128, on_trackbar);
+	cvCreateTrackbar("SUPERIOR_LIMIT_S", "Control", &supLimitS, 128, on_trackbar);
+	cvCreateTrackbar("INFERIOR_LIMIT_V", "Control", &infLimitV, 128, on_trackbar);
+	cvCreateTrackbar("SUPERIOR_LIMIT_V", "Control", &supLimitV, 128, on_trackbar);
 }
 
 //Function to create a color mask and "cut" the ball in the source image
@@ -37,13 +41,13 @@ void colorDetection(cv::Mat src, cv::Mat &mask, cv::Scalar colors[], int it){
 	//3-channel binary mask
 	cv::cvtColor(src, hsv, cv::COLOR_BGR2HSV);
 	cv::GaussianBlur(hsv, hsv, cv::Size(3, 3),0,0);
-	cv::inRange(hsv, cv::Scalar(colors[2][0] - rangeH, colors[2][1] - rangeS, colors[2][2] - rangeV),
-              cv::Scalar(colors[2][0]  + rangeH + 1 , colors[2][1]  + rangeS + 1, colors[2][2]  + rangeV + 1), mask);
+	cv::inRange(hsv, cv::Scalar(colors[2][0] - infLimitH, colors[2][1] - infLimitS, colors[2][2] - infLimitV),
+              cv::Scalar(colors[2][0]  + supLimitH + 1 , colors[2][1]  + supLimitS + 1, colors[2][2]  + supLimitV + 1), mask);
   //hsv.release();
 	//image erosion
 	cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT,cv::Size( 21,21 ),cv::Point( -1, -1 ) );
-  cv::Mat element2 = cv::getStructuringElement( cv::MORPH_RECT,cv::Size( 11,11 ),cv::Point( -1, -1 ) );
-  cv::morphologyEx( mask, mask, cv::MORPH_CLOSE, element);
+	cv::Mat element2 = cv::getStructuringElement( cv::MORPH_RECT,cv::Size( 11,11 ),cv::Point( -1, -1 ) );
+	cv::morphologyEx( mask, mask, cv::MORPH_CLOSE, element);
 	cv::morphologyEx( mask, mask, cv::MORPH_OPEN, element2);
 
 	//mask aplication
@@ -51,54 +55,13 @@ void colorDetection(cv::Mat src, cv::Mat &mask, cv::Scalar colors[], int it){
 	cv::merge(mask3, 3, thrs);
 	cv::bitwise_and(thrs, src, tgt);
 
-  std::vector<cv::Mat> channels;
-  split(hsv, channels);
+	//std::vector<cv::Mat> channels;
+	//split(hsv, channels);
 	cv::imshow("Bola", tgt);
-	cv::imshow("HSV", channels[0]);
+	cv::imshow("HSV", hsv);
 
 }
 
-/*
-void findPos(cv::Mat &src,cv::Mat &tgt, std::vector<cv::Vec3f> &circles,
-            Json::Value &root, float k){
-
-    cv::HoughCircles(src,circles,cv::HOUGH_GRADIENT,2,src.rows/4,200,20 );
-		//select best contour
-
-		int realBallRadius = root.get("ball_radius", 0).asInt();
-    int bestBallRadiusDif = 0, final_radius, bestBall = 0;
-    int ball = 0;
-		cv::Point ball_center;
-		double radiusDif;
-
-		for( int i = 0; i < circles.size(); i++ ){
-      std::cout << circles[i][2] << std::endl;
-      //circles[i][2] /= k;
-      std::cout << circles[i][2] << std::endl;
-			radiusDif = abs(realBallRadius - circles[i][2]);
-			if(bestBall == 0 || radiusDif < bestBallRadiusDif){
-        ball = 1;
-        final_radius = round(circles[i][2]);
-				ball_center.x = round(circles[i][0]);
-				ball_center.y = round(circles[i][1]);
-				bestBall = i;
-				bestBallRadiusDif = radiusDif;
-			}
-		}
-
-		if(ball != 0){
-			cv::circle( tgt, cv::Point(circles[bestBall][0],circles[bestBall][1]),
-                  (int)circles[bestBall][2], cv::Scalar(255,0,0), 2, 8, 0 );
-      root["ball_x"] = (int)(circles[bestBall][0]/k);
-      root["ball_y"] = (int)(circles[bestBall][1]/k);
-      std::ofstream configs;
-      configs.open("configs.json");
-      Json::StyledWriter styledWriter;
-      configs << styledWriter.write(root);
-      configs.close();
-		}
-}
-*/
 //Function to find the ball position in the screen
 void findPos(cv::Mat &src,cv::Mat &tgt, std::vector<std::vector<cv::Point> > &contours,
               std::vector<cv::Vec4i> &hierarchy, Json::Value &root, float k){
@@ -337,7 +300,9 @@ void actionConfigureColors(cv::VideoCapture &cap, Json::Value &root) {
 
 void saveInJson(Json::Value root) {
   std::ofstream configs;
-  configs.open("configs.json");
+  configs.open("../../../inc/configs.json");
+  if(configs.is_open()) std::cout<< "saving cofiguration..." << std::endl;
+  else std::cout<< "cannot open cofiguration file..." << std::endl;
   Json::StyledWriter styledWriter;
   configs << styledWriter.write(root);
   configs.close();
@@ -378,8 +343,8 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata) {
           cv::cvtColor(image_roi,image_roi,cv::COLOR_BGR2HSV);
           cv::GaussianBlur(image_roi, image_roi, cv::Size(3, 3),0,0);
 
-    			//Find Mean of colors (Excluding outer areas)
-    			mean_color = cv::mean(image_roi,mask_pickcolor);
+			//Find Mean of colors (Excluding outer areas)
+			mean_color = cv::mean(image_roi,mask_pickcolor);
         }
         break;
       case 'f':

@@ -10,7 +10,8 @@
 extern char state;
 extern cv::Scalar mean_color;
 extern double x_color, y_color;
-extern int colorH, colorS, colorV, rangeH, rangeS, rangeV;
+extern int colorH, colorS, colorV;
+extern int supLimitH, supLimitS, supLimitV, infLimitH, infLimitS, infLimitV;
 extern double resize;
 extern int selectedCorner;
 extern cv::Mat Gframe;
